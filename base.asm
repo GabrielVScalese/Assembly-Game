@@ -114,13 +114,7 @@
     headUp      equ   103
     apple       equ   104
     background  equ   105
-
-    img1    equ     100 ; maca.bmp
-    img2    equ     101 ; head.bmp
-    img3    equ     103 ; fundo.bmp
-
     CREF_TRANSPARENT  EQU 00FFFFFFh
-
 
 .data
         szDisplayName db "Snake Game",0
@@ -130,10 +124,6 @@
         buffer        db 128 dup(0)
         X             dd 0
         Y             dd 0
-        X1            dd 50
-        Y1            dd 10
-        X2            dd 100
-        Y2            dd 100
         msg1          db "Mandou uma mensagem Ok",0
         counterX      dd 50
         counterY      dd 10
