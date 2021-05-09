@@ -453,8 +453,8 @@ WndProc proc hWin   :DWORD,
               mov ecx, RangeOfNumbers             ; Range (0..RangeOfNumbers-1)
               xor edx, edx                        ; Needed for DIV
               div ecx                             ; EDX:EAX/ECX -> EAX remainder EDX
-              .if edx < 10
-                add edx, 10
+              .if edx < 40
+                add edx, 40
               .endif
               mov appleX, edx 
               xor edx, edx
@@ -464,8 +464,8 @@ WndProc proc hWin   :DWORD,
               mov ecx, RangeOfNumbers             ; Range (0..RangeOfNumbers-1)
               xor edx, edx                        ; Needed for DIV
               div ecx                             ; EDX:EAX/ECX -> EAX remainder EDX
-              .if edx < 10
-                add edx, 10
+              .if edx < 40
+                add edx, 40
               .endif
               mov appleY, edx 
               mov stop, "t"
@@ -483,8 +483,8 @@ WndProc proc hWin   :DWORD,
               mov ecx, RangeOfNumbers             ; Range (0..RangeOfNumbers-1)
               xor edx, edx                        ; Needed for DIV
               div ecx                             ; EDX:EAX/ECX -> EAX remainder EDX
-              .if edx < 10
-                add edx, 10
+              .if edx < 40
+                add edx, 40
               .endif
               mov appleX, edx 
               xor edx, edx
@@ -494,8 +494,8 @@ WndProc proc hWin   :DWORD,
               mov ecx, RangeOfNumbers             ; Range (0..RangeOfNumbers-1)
               xor edx, edx                        ; Needed for DIV
               div ecx                             ; EDX:EAX/ECX -> EAX remainder EDX
-              .if edx < 10
-                add edx, 10
+              .if edx < 40
+                add edx, 40
               .endif
               mov appleY, edx 
               mov stop, "t"
