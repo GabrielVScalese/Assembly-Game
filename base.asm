@@ -42,6 +42,8 @@
     INCLUDELIB \Masm32\Lib\oleaut32.lib
     INCLUDELIB \Masm32\Lib\msvcrt.lib
     INCLUDELIB \Masm32\Lib\masm32.lib
+    INCLUDELIB \Masm32\Lib\cryptdll.lib
+    INCLUDE \MASM32\INCLUDE\cryptdll.inc
 ; #########################################################################
 
 ; ------------------------------------------------------------------------
@@ -50,7 +52,9 @@
 ; the capacity to use DIFFERENT parameters in each block.
 ; ------------------------------------------------------------------------
 
-      ; 1. szText
+      NumberOfNumbers = 1        ; Number of random numbers to be generated and shown
+      RangeOfNumbers = 600        ; Range of the random numbers (0..RangeOfNumbers-1)
+        ; 1. szText
       ; A macro to insert TEXT into the code section for convenient and 
 
       szText MACRO Name, Text:VARARG
@@ -134,11 +138,15 @@
         snakeHeight   dd 35
         snakeXSize    dd 32
         snakeYSize    dd 29
-        pontText      db "Pontos: "
+        randomValue   dd 0
+        ; pontText      db "Pontos: "
         pont          dd 0
         stop          db "f"
         contador      dd 10
         imgY          dd 100  
+
+        ; Teste
+        random_bytes dd 1 DUP (?)
 
 ; #########################################################################
 
@@ -439,15 +447,57 @@ WndProc proc hWin   :DWORD,
             .if counterY > 610
               mov counterX, 50
               mov counterY, 40
+              invoke CDGenerateRandomBits, Addr random_bytes, (NumberOfNumbers)
+              lea esi, random_bytes
+              lodsd 
+              mov ecx, RangeOfNumbers             ; Range (0..RangeOfNumbers-1)
+              xor edx, edx                        ; Needed for DIV
+              div ecx                             ; EDX:EAX/ECX -> EAX remainder EDX
+              .if edx < 10
+                add edx, 10
+              .endif
+              mov appleX, edx 
+              xor edx, edx
+              invoke CDGenerateRandomBits, Addr random_bytes, (NumberOfNumbers)
+              lea esi, random_bytes
+              lodsd 
+              mov ecx, RangeOfNumbers             ; Range (0..RangeOfNumbers-1)
+              xor edx, edx                        ; Needed for DIV
+              div ecx                             ; EDX:EAX/ECX -> EAX remainder EDX
+              .if edx < 10
+                add edx, 10
+              .endif
+              mov appleY, edx 
               mov stop, "t"
               invoke wsprintf,addr buffer,chr$("You lose! Your pontuation: %d"), pont       
               invoke MessageBox,hWin,ADDR buffer,ADDR szDisplayName,MB_OK
             .endif
-            
 
+          
             .if counterX >= 650 || counterY < 1 || counterX < 1
               mov counterX, 50
               mov counterY, 40
+             invoke CDGenerateRandomBits, Addr random_bytes, (NumberOfNumbers)
+              lea esi, random_bytes
+              lodsd 
+              mov ecx, RangeOfNumbers             ; Range (0..RangeOfNumbers-1)
+              xor edx, edx                        ; Needed for DIV
+              div ecx                             ; EDX:EAX/ECX -> EAX remainder EDX
+              .if edx < 10
+                add edx, 10
+              .endif
+              mov appleX, edx 
+              xor edx, edx
+              invoke CDGenerateRandomBits, Addr random_bytes, (NumberOfNumbers)
+              lea esi, random_bytes
+              lodsd 
+              mov ecx, RangeOfNumbers             ; Range (0..RangeOfNumbers-1)
+              xor edx, edx                        ; Needed for DIV
+              div ecx                             ; EDX:EAX/ECX -> EAX remainder EDX
+              .if edx < 10
+                add edx, 10
+              .endif
+              mov appleY, edx 
               mov stop, "t"
               invoke wsprintf,addr buffer,chr$("You lose! Your pontuation: %d"), pont            
               invoke MessageBox,hWin,ADDR buffer,ADDR szDisplayName,MB_OK
@@ -456,6 +506,7 @@ WndProc proc hWin   :DWORD,
             .if stop == "t"
               mov stop, "f"
               mov direction, "r"
+              mov pont, 0
             .endif
             
             ; Snake
@@ -611,20 +662,39 @@ ThreadProc PROC USES ecx Param:DWORD
     .endif
 
     mov eax, appleX
-    sub eax, 20
+    sub eax, 25
     mov ecx, appleX
-    add ecx, 15
+    add ecx, 25
 
     .if counterX >= eax && counterX <= ecx
       mov eax, appleY
-      sub eax, 15
+      sub eax, 20
       mov ecx, appleY
-      add ecx, 15
+      add ecx, 20
 
       .if counterY >= eax && counterY <= ecx
         inc pont
-        add appleX, 40
-        add appleY, 40
+        invoke CDGenerateRandomBits, Addr random_bytes, (NumberOfNumbers)
+        lea esi, random_bytes
+        lodsd 
+        mov ecx, RangeOfNumbers             ; Range (0..RangeOfNumbers-1)
+        xor edx, edx                        ; Needed for DIV
+        div ecx                             ; EDX:EAX/ECX -> EAX remainder EDX
+        .if edx < 10
+          add edx, 40
+        .endif
+        mov appleX, edx 
+        xor edx, edx
+        invoke CDGenerateRandomBits, Addr random_bytes, (NumberOfNumbers)
+        lea esi, random_bytes
+        lodsd 
+        mov ecx, RangeOfNumbers             ; Range (0..RangeOfNumbers-1)
+        xor edx, edx                        ; Needed for DIV
+        div ecx                             ; EDX:EAX/ECX -> EAX remainder EDX
+        .if edx < 10
+          add edx, 40
+        .endif
+        mov appleY, edx 
       .endif
   
     .endif
