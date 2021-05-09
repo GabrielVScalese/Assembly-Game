@@ -8,6 +8,7 @@
 #define headUp 103
 #define apple 104
 #define background 105
+#define block 106
 
 // define icone e outros a serem utilizados
 ICONE ICON MOVEABLE PURE LOADONCALL DISCARDABLE "FAVICON.ICO"
@@ -20,6 +21,8 @@ headDown BITMAP MOVEABLE PURE LOADONCALL DISCARDABLE ".\\images\\headDown.bmp"
 headUp BITMAP MOVEABLE PURE LOADONCALL DISCARDABLE ".\\images\\headUp.bmp"
 apple BITMAP MOVEABLE PURE LOADONCALL DISCARDABLE ".\\images\\apple.bmp"
 background BITMAP MOVEABLE PURE LOADONCALL DISCARDABLE ".\\images\\background.bmp"
+block BITMAP MOVEABLE PURE LOADONCALL DISCARDABLE ".\\images\\block.bmp"
+
 
 // cria a estrutura do menu
 600 MENUEX MOVEABLE IMPURE LOADONCALL DISCARDABLE

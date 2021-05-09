@@ -118,6 +118,7 @@
     headUp      equ   103
     apple       equ   104
     background  equ   105
+    block       equ   106
     CREF_TRANSPARENT  EQU 00FFFFFFh
 
 .data
@@ -129,7 +130,7 @@
         X             dd 0
         Y             dd 0
         msg1          db "Mandou uma mensagem Ok",0
-        counterX      dd 50
+        counterX      dd 200
         counterY      dd 10
         appleX        dd 100
         appleY        dd 100
@@ -139,6 +140,9 @@
         snakeXSize    dd 32
         snakeYSize    dd 29
         randomValue   dd 0
+        blocks        dd 1
+        subtractX     dd 10
+        addY          dd 11
         ; pontText      db "Pontos: "
         pont          dd 0
         stop          db "f"
@@ -160,7 +164,8 @@
         hBmpHeadDown    dd  ?
         hBmpHeadUp      dd  ?
         hBmpApple       dd  ?
-        hBmpBack        dd ?
+        hBmpBack        dd  ?
+        hBmpBlock       dd  ?
 
 ; ------------------------------------------------------------------------
 ; This is the start of the code section where executable code begins. This
@@ -203,6 +208,9 @@ start:
 
     invoke LoadBitmap, hInstance, background
     mov    hBmpBack, eax
+
+    invoke LoadBitmap, hInstance, block
+    mov    hBmpBlock, eax
 
     ; eax tem o ponteiro para uma string que mostra toda linha de comando.
     ;invoke wsprintf,addr buffer,chr$("%s"), eax
@@ -554,6 +562,36 @@ WndProc proc hWin   :DWORD,
             invoke SelectObject,hDC,hOld
             invoke DeleteDC,memDC  
             
+            ; Block image
+            
+            invoke CreateCompatibleDC, hDC
+            mov   memDC, eax
+            invoke SelectObject, memDC, hBmpBlock
+            mov  hOld, eax  
+            mov eax, 0 ; counter
+
+            .WHILE eax < 2
+              mov ecx, counterX
+              .if direction == "r"
+                sub ecx, subtractX
+              .ELSEIF direction == "l"
+                add ecx, subtractX
+              .endif
+              mov ebx, counterY
+              add ebx, addY
+              invoke TransparentBlt, hDC, ecx, ebx, 12,14, memDC, \
+                            0, 0, 7, 12, CREF_TRANSPARENT
+              inc eax
+              add subtractX, 10
+            .ENDW
+
+            invoke SelectObject,hDC,hOld
+            invoke DeleteDC,memDC 
+            xor eax, eax
+            xor ecx, ecx
+            xor ebx, ebx
+            mov subtractX, 10
+
             ; Apple image
 
             invoke CreateCompatibleDC, hDC
