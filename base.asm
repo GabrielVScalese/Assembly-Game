@@ -127,11 +127,16 @@
         msg1          db "Mandou uma mensagem Ok",0
         counterX      dd 50
         counterY      dd 10
+        appleX        dd 100
+        appleY        dd 100
         direction     dd "r"
         snakeWidth    dd 40
         snakeHeight   dd 35
         snakeXSize    dd 32
         snakeYSize    dd 29
+        pontText      db "Pontos: "
+        pont          dd 0
+        stop          db "f"
         contador      dd 10
         imgY          dd 100  
 
@@ -334,6 +339,7 @@ WndProc proc hWin   :DWORD,
         .if wParam == 1000
             invoke SendMessage,hWin,WM_SYSCOMMAND,SC_CLOSE,NULL
         .elseif wParam == 1001            
+            
             mov eax, offset ThreadProc
             invoke CreateThread, NULL, NULL, eax,  \
                                  NULL, NORMAL_PRIORITY_CLASS, \
@@ -371,9 +377,9 @@ WndProc proc hWin   :DWORD,
             mov   rect.bottom, 230
             invoke InvalidateRect, hWnd, addr rect, TRUE
 
-    .elseif uMsg == WM_CHAR                           ; Movimentacao setinhas
-            invoke wsprintf,addr buffer,chr$("LETRA =  %c"), wParam
-            invoke MessageBox,hWin,ADDR buffer,ADDR szDisplayName,MB_OK
+    .elseif uMsg == WM_CHAR
+            invoke wsprintf,addr buffer,chr$("counterX: %d"), counterY
+            invoke MessageBox,hWin,ADDR buffer,ADDR szDisplayName, MB_OK
     .elseif uMsg == WM_KEYDOWN
             ;invoke wsprintf,addr buffer,chr$("Tecla codigo = %d"), wParam            
             ;invoke MessageBox,hWin,ADDR buffer,ADDR szDisplayName,MB_OK
@@ -391,6 +397,8 @@ WndProc proc hWin   :DWORD,
             .if wParam == VK_LEFT
                mov direction, "l"
             .endif            
+    
+    .elseif uMsg == WM_CLOSE
             
     .elseif uMsg == WM_FINISH
             ; aqui iremos desenhar sem chamar a função InvalideteRect
@@ -423,6 +431,33 @@ WndProc proc hWin   :DWORD,
             invoke SelectObject,hDC,hOld
             invoke DeleteDC,memDC  
 
+            ; invoke GetClientRect,hWnd, ADDR rect
+          
+            ; invoke DrawText, hDC, ADDR pontText, -1, ADDR rect, \
+            ;      DT_SINGLELINE
+
+            .if counterY > 610
+              mov counterX, 50
+              mov counterY, 40
+              mov stop, "t"
+              invoke wsprintf,addr buffer,chr$("You lose! Your pontuation: %d"), pont       
+              invoke MessageBox,hWin,ADDR buffer,ADDR szDisplayName,MB_OK
+            .endif
+            
+
+            .if counterX >= 650 || counterY < 1 || counterX < 1
+              mov counterX, 50
+              mov counterY, 40
+              mov stop, "t"
+              invoke wsprintf,addr buffer,chr$("You lose! Your pontuation: %d"), pont            
+              invoke MessageBox,hWin,ADDR buffer,ADDR szDisplayName,MB_OK
+            .endif
+
+            .if stop == "t"
+              mov stop, "f"
+              mov direction, "r"
+            .endif
+            
             ; Snake
 
             invoke CreateCompatibleDC, hDC
@@ -462,8 +497,6 @@ WndProc proc hWin   :DWORD,
 
             mov  hOld, eax 
 
-            ; invoke BitBlt, hDC, counterX, counterY, 32,29, memDC, 0,0, SRCCOPY ; primeiro valor = x, segundo = y, terceiro = width, quarto = height
-
             invoke TransparentBlt, hDC, counterX, counterY, snakeWidth, snakeHeight, memDC, \
                             0, 0, snakeXSize, snakeYSize, CREF_TRANSPARENT
 
@@ -478,9 +511,7 @@ WndProc proc hWin   :DWORD,
             invoke SelectObject, memDC, hBmpApple
             mov  hOld, eax  
 
-            ; invoke BitBlt, hDC, X2, Y2, 32,32, memDC, 0,0, SRCCOPY ; primeiro valor = x, segundo = y, terceiro = width, quarto = height
-            
-            invoke TransparentBlt, hDC, X2, Y2, 24, 30, memDC, \
+            invoke TransparentBlt, hDC, appleX, appleY, 24, 30, memDC, \
                             0, 0, 28, 33, CREF_TRANSPARENT
 
             invoke SelectObject,hDC,hOld
@@ -561,32 +592,43 @@ TopXY endp
 
 ThreadProc PROC USES ecx Param:DWORD
 
-  invoke WaitForSingleObject, hEventStart, 1000 
-  .if eax == WAIT_TIMEOUT
+  invoke WaitForSingleObject, hEventStart, 300
+  .if eax == WAIT_TIMEOUT && stop == "f"
     .if direction == "r"
-      .if counterX < 950
-        add counterX, 10
-      .endif
+      add counterX, 10
     .endif
 
     .if direction == "l"
-      .if counterX > 1
-        sub counterX, 10
-      .endif
+      sub counterX, 10
     .endif
 
     .if direction == "u"
-      .if counterY > 1
-        sub counterY, 10
-      .endif
+      sub counterY, 10
     .endif
 
     .if direction == "d"
-      .if counterY < 950
-        add counterY, 10
-      .endif
+      add counterY, 10
     .endif
+
+    mov eax, appleX
+    sub eax, 20
+    mov ecx, appleX
+    add ecx, 15
+
+    .if counterX >= eax && counterX <= ecx
+      mov eax, appleY
+      sub eax, 15
+      mov ecx, appleY
+      add ecx, 15
+
+      .if counterY >= eax && counterY <= ecx
+        inc pont
+        add appleX, 40
+        add appleY, 40
+      .endif
   
+    .endif
+
     invoke SendMessage, hWnd, WM_FINISH, NULL, NULL
 
   .endif
