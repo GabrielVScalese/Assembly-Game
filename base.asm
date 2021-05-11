@@ -402,16 +402,24 @@ WndProc proc hWin   :DWORD,
             ; X vai de 01 ate 950
             ; Y vai de 01 ate 910
             .if wParam == VK_DOWN
+              .if direction != "u"
                 mov direction, "d"
+              .endif
             .endif                 
             .if wParam == VK_UP
-               mov direction, "u"
+              .if direction != "d"
+                mov direction, "u"
+              .endif
             .endif
             .if wParam == VK_RIGHT
+             .if direction != "l"
                mov direction, "r"
+             .endif
             .endif                 
             .if wParam == VK_LEFT
+              .if direction != "r"
                mov direction, "l"
+              .endif
             .endif            
     
     .elseif uMsg == WM_CLOSE
