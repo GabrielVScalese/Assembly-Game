@@ -139,13 +139,15 @@
         snakeHeight   dd 35
         snakeXSize    dd 32
         snakeYSize    dd 29
-        bodyX         dw 100 dup(?)
-        bodyY         dw 100 dup(?)
-        bodyCounter   dw 0
+        bodyX         dd 100 dup(?)
+        bodyY         dd 100 dup(?)
+        bodyCounter   dd 0
         randomValue   dd 0
         blocks        dd 1
         subtractX     dd 10
         addY          dd 11
+        tempX         dd 0
+        tempY         dd 0
         ; pontText    db "Pontos: "
         pont          dd 0
         stop          db "f"
@@ -274,8 +276,6 @@ WinMain proc hInst     :DWORD,
         mov Wwd, 700
         mov Wht, 700
         
-      
-
         invoke GetSystemMetrics,SM_CXSCREEN ; get screen width in pixels
         invoke TopXY,Wwd,eax
         mov Wtx, eax
@@ -584,28 +584,32 @@ WndProc proc hWin   :DWORD,
             
             ; Block image
             
-            invoke CreateCompatibleDC, hDC
-            mov   memDC, eax
-            invoke SelectObject, memDC, hBmpBlock
-            mov  hOld, eax  
-            mov eax, 0 ; counter
+ 
+            mov edx, 0 ; counter
 
-            .WHILE eax < blocks
-              mov ecx, counterX
-              mov ebx, counterY
-              add ebx, addY
-              invoke TransparentBlt, hDC, ecx, ebx, 12,14, memDC, \
+            ; Body
+
+            .WHILE edx < pont
+              mov edi, offset bodyX
+              mov esi, offset bodyY
+              ; mov tempX, dword ptr [edi + edx] ; x
+              ; mov tempY, dword ptr [esi + edx] ; y
+              invoke CreateCompatibleDC, hDC
+              mov   memDC, eax
+              invoke SelectObject, memDC, hBmpBlock
+              mov  hOld, eax  
+              invoke TransparentBlt, hDC, dword ptr [edi + edx], dword ptr [esi + edx], 12,14, memDC, \
                             0, 0, 7, 12, CREF_TRANSPARENT
-              inc eax
-              add subtractX, 10
+              invoke SelectObject,hDC,hOld
+              invoke DeleteDC,memDC 
+              invoke wsprintf,addr buffer,chr$("tempX: %d"), tempX            
+              invoke MessageBox,hWin,ADDR buffer,ADDR szDisplayName,MB_OK
+              inc edx
             .ENDW
 
-            invoke SelectObject,hDC,hOld
-            invoke DeleteDC,memDC 
             xor eax, eax
             xor ecx, ecx
             xor ebx, ebx
-            mov subtractX, 10
 
             ; Apple image
 
@@ -698,6 +702,9 @@ ThreadProc PROC USES ecx Param:DWORD
 
   invoke WaitForSingleObject, hEventStart, 300
   .if eax == WAIT_TIMEOUT && stop == "f"
+    mov edx, counterX ; temp
+    mov ebx, counterY ; temp
+
     .if direction == "r"
       add counterX, 10
     .endif
@@ -717,8 +724,9 @@ ThreadProc PROC USES ecx Param:DWORD
     mov eax, appleX
     sub eax, 25
     mov ecx, appleX
-    add ecx, 25
+    add ecx, 25 
 
+    ; EBP -> nao usar
     .if counterX >= eax && counterX <= ecx    ; Colisao Cobra X Maca
       mov eax, appleY
       sub eax, 20
@@ -726,6 +734,14 @@ ThreadProc PROC USES ecx Param:DWORD
       add ecx, 20
 
       .if counterY >= eax && counterY <= ecx
+        mov edi, offset bodyX
+        mov esi, offset bodyY
+        mov eax, pont
+
+        mov dword ptr[edi + eax], edx ; x temporario
+        mov dword ptr [esi + eax], ebx ; y temporario
+        inc pont
+
         ;.if pont == 0
          ; .if direction == "r"
           ;  mov ecx, counterX
@@ -756,8 +772,6 @@ ThreadProc PROC USES ecx Param:DWORD
           ; mov dword ptr [esi + edi], ecx
           ;.endif
         ;.endif
-        inc blocks  
-        inc pont
         invoke CDGenerateRandomBits, Addr random_bytes, (NumberOfNumbers)
         lea esi, random_bytes
         lodsd 
