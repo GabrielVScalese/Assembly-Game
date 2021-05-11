@@ -139,11 +139,14 @@
         snakeHeight   dd 35
         snakeXSize    dd 32
         snakeYSize    dd 29
+        bodyX         dw 100 dup(?)
+        bodyY         dw 100 dup(?)
+        bodyCounter   dw 0
         randomValue   dd 0
         blocks        dd 1
         subtractX     dd 10
         addY          dd 11
-        ; pontText      db "Pontos: "
+        ; pontText    db "Pontos: "
         pont          dd 0
         stop          db "f"
         contador      dd 10
@@ -270,6 +273,8 @@ WinMain proc hInst     :DWORD,
 
         mov Wwd, 700
         mov Wht, 700
+        
+      
 
         invoke GetSystemMetrics,SM_CXSCREEN ; get screen width in pixels
         invoke TopXY,Wwd,eax
@@ -330,6 +335,11 @@ WndProc proc hWin   :DWORD,
     LOCAL hOld   :DWORD
 
     LOCAL memDC  :DWORD
+
+  ;  mov ebp, offset bodyX
+   ; mov esi, offset bodyY
+  ;  mov edi, 0
+
 
     ; cuidado ao declarar variaveis locais pois ao terminar o procedimento
     ; seu valor é limpado colocado lixo no lugar.
@@ -468,11 +478,12 @@ WndProc proc hWin   :DWORD,
               lodsd 
               mov ecx, RangeOfNumbers             ; Range (0..RangeOfNumbers-1)
               xor edx, edx                        ; Needed for DIV
-              div ecx                             ; EDX:EAX/ECX -> EAX remainder EDX
+              div ecx                             ; EDX:EAX/ECX -> EAX remainder EDX        
+              mov appleX, edx 
+              add appleX, 150  
               .if edx < 40
                 add edx, 40
               .endif
-              mov appleX, edx 
               xor edx, edx
               invoke CDGenerateRandomBits, Addr random_bytes, (NumberOfNumbers)
               lea esi, random_bytes
@@ -480,10 +491,11 @@ WndProc proc hWin   :DWORD,
               mov ecx, RangeOfNumbers             ; Range (0..RangeOfNumbers-1)
               xor edx, edx                        ; Needed for DIV
               div ecx                             ; EDX:EAX/ECX -> EAX remainder EDX
+               mov appleY, edx  
+               add appleY, 150                       
               .if edx < 40
                 add edx, 40
               .endif
-              mov appleY, edx 
               mov stop, "t"
               invoke wsprintf,addr buffer,chr$("You lose! Your pontuation: %d"), pont       
               invoke MessageBox,hWin,ADDR buffer,ADDR szDisplayName,MB_OK
@@ -578,13 +590,8 @@ WndProc proc hWin   :DWORD,
             mov  hOld, eax  
             mov eax, 0 ; counter
 
-            .WHILE eax < 2
+            .WHILE eax < blocks
               mov ecx, counterX
-              .if direction == "r"
-                sub ecx, subtractX
-              .ELSEIF direction == "l"
-                add ecx, subtractX
-              .endif
               mov ebx, counterY
               add ebx, addY
               invoke TransparentBlt, hDC, ecx, ebx, 12,14, memDC, \
@@ -712,13 +719,44 @@ ThreadProc PROC USES ecx Param:DWORD
     mov ecx, appleX
     add ecx, 25
 
-    .if counterX >= eax && counterX <= ecx
+    .if counterX >= eax && counterX <= ecx    ; Colisao Cobra X Maca
       mov eax, appleY
       sub eax, 20
       mov ecx, appleY
       add ecx, 20
 
       .if counterY >= eax && counterY <= ecx
+        ;.if pont == 0
+         ; .if direction == "r"
+          ;  mov ecx, counterX
+           ; sub ecx, 20
+            ;mov edx, counterY
+            ;mov dword ptr [ebp + edi], ecx
+            ;mov dword ptr [esi + edi], edx
+          ;.endif
+          ;.if direction == "l"
+           ; mov ecx, counterX
+            ;add ecx, 20
+            ;mov edx, counterY
+            ;mov dword ptr [ebp + edi], ecx
+            ;mov dword ptr [esi + edi], edx
+          ;.endif
+          ;.if direction == "u"
+           ; mov ecx, counterY
+           ; add ecx, 20
+           ; mov edx, counterX
+           ; mov dword ptr [ebp + edi], edx
+           ; mov dword ptr [esi + edi], ecx
+          ;.endif
+          ;.if direction == "d"
+           ; mov ecx, counterY
+           ; sub ecx, 20
+           ; mov edx, counterX
+           ; mov dword ptr [ebp + edi], edx
+          ; mov dword ptr [esi + edi], ecx
+          ;.endif
+        ;.endif
+        inc blocks  
         inc pont
         invoke CDGenerateRandomBits, Addr random_bytes, (NumberOfNumbers)
         lea esi, random_bytes
