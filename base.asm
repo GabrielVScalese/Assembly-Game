@@ -7,6 +7,24 @@
 
 ; #########################################################################
 
+      ; Musica 
+
+      includelib \Masm32\lib\winmm.lib
+       include \masm32\include\windows.inc
+
+      include \masm32\include\user32.inc
+      include \masm32\include\kernel32.inc
+
+      include \MASM32\INCLUDE\gdi32.inc
+	  include \Masm32\include\winmm.inc 
+
+
+      includelib \masm32\lib\user32.lib
+      includelib \masm32\lib\kernel32.lib
+      includelib \MASM32\LIB\gdi32.lib
+
+      ;
+
       include \masm32\include\masm32rt.inc
 
       ; ---------------------------------------------
@@ -100,6 +118,8 @@
         WndProc PROTO :DWORD,:DWORD,:DWORD,:DWORD
         TopXY PROTO   :DWORD,:DWORD
 
+      PlaySound PROTO STDCALL :DWORD, :DWORD, :DWORD
+
 ; #########################################################################
 
 ; ------------------------------------------------------------------------
@@ -134,6 +154,10 @@
         counterY      dd 10
         appleX        dd 100
         appleY        dd 100
+        appleX2       dd 200
+        appleY2       dd 300
+        appleX3       dd 30
+        appleY3       dd 20
         direction     dd "r"
         snakeWidth    dd 40
         snakeHeight   dd 35
@@ -146,13 +170,30 @@
         blocks        dd 1
         subtractX     dd 10
         addY          dd 11
-        tempX         dd 0
-        tempY         dd 0
-        ; pontText    db "Pontos: "
         pont          dd 0
         stop          db "f"
         contador      dd 10
-        imgY          dd 100  
+        imgY          dd 100
+
+        ; Musics
+
+        BackgroundMusic     db "background_music.mp3", 0
+        AppleSong           db "apple_song.mp3", 0
+
+        ; - MCI_OPEN_PARMS Structure ( API=mciSendCommand ) -
+        open_dwCallback     dd ?
+        open_wDeviceID     dd ?
+        open_lpstrDeviceType  dd ?
+        open_lpstrElementName  dd ?
+        open_lpstrAlias     dd ?
+
+		    ; - MCI_GENERIC_PARMS Structure ( API=mciSendCommand ) -
+		    generic_dwCallback   dd ?
+
+		    ; - MCI_PLAY_PARMS Structure ( API=mciSendCommand ) -
+        play_dwCallback     dd ?
+        play_dwFrom       dd ?
+        play_dwTo        dd ?
 
         ; Teste
         random_bytes dd 1 DUP (?)
@@ -220,6 +261,15 @@ start:
     ; eax tem o ponteiro para uma string que mostra toda linha de comando.
     ;invoke wsprintf,addr buffer,chr$("%s"), eax
     ;invoke MessageBox,NULL,ADDR buffer,ADDR szDisplayName,MB_OK
+
+    mov   open_lpstrDeviceType, 0h         ;fill MCI_OPEN_PARMS structure
+    mov   open_lpstrElementName,OFFSET BackgroundMusic
+    invoke mciSendCommandA,0,MCI_OPEN, MCI_OPEN_ELEMENT,offset open_dwCallback 
+            
+    ;------------------------------------------------------------------------------
+    ; API "mciSendCommandA", MCI_PLAY command begins transmitting output data.
+    ;------------------------------------------------------------------------------
+    invoke mciSendCommandA,open_wDeviceID,MCI_PLAY,MCI_FROM or MCI_NOTIFY,offset play_dwCallback
 
     invoke WinMain,hInstance,NULL,CommandLine,SW_SHOWDEFAULT
     
@@ -335,11 +385,6 @@ WndProc proc hWin   :DWORD,
     LOCAL hOld   :DWORD
 
     LOCAL memDC  :DWORD
-
-  ;  mov ebp, offset bodyX
-   ; mov esi, offset bodyY
-  ;  mov edi, 0
-
 
     ; cuidado ao declarar variaveis locais pois ao terminar o procedimento
     ; seu valor é limpado colocado lixo no lugar.
@@ -481,9 +526,21 @@ WndProc proc hWin   :DWORD,
               div ecx                             ; EDX:EAX/ECX -> EAX remainder EDX        
               mov appleX, edx 
               add appleX, 150  
-              .if edx < 40
-                add edx, 40
+
+              mov appleX2, edx
+              .if appleX2 > 300
+                sub appleX2, 300
+              .else
+                sub appleX2, 100
               .endif
+
+              mov appleX3, edx
+              .if appleX3 < 200
+                add appleX3, 400
+              .else
+                add appleX3, 100
+              .endif
+
               xor edx, edx
               invoke CDGenerateRandomBits, Addr random_bytes, (NumberOfNumbers)
               lea esi, random_bytes
@@ -491,11 +548,23 @@ WndProc proc hWin   :DWORD,
               mov ecx, RangeOfNumbers             ; Range (0..RangeOfNumbers-1)
               xor edx, edx                        ; Needed for DIV
               div ecx                             ; EDX:EAX/ECX -> EAX remainder EDX
-               mov appleY, edx  
-               add appleY, 150                       
-              .if edx < 40
-                add edx, 40
+              mov appleY, edx  
+              add appleY, 150
+
+              mov appleY2, edx
+              .if appleY2 < 300
+                add appleY2, 345
+              .else
+                add appleY2, 100
               .endif
+
+              mov appleY3, edx
+              .if appleY3 > 300
+                sub appleY3, 234
+              .else
+                sub appleY3, 100
+              .endif
+
               mov stop, "t"
               invoke wsprintf,addr buffer,chr$("You lose! Your pontuation: %d"), pont       
               invoke MessageBox,hWin,ADDR buffer,ADDR szDisplayName,MB_OK
@@ -581,37 +650,8 @@ WndProc proc hWin   :DWORD,
 
             invoke SelectObject,hDC,hOld
             invoke DeleteDC,memDC  
-            
-            ; Block image
-            
- 
-            mov edx, 0 ; counter
-
-            ; Body
-
-            .WHILE edx < pont
-              mov edi, offset bodyX
-              mov esi, offset bodyY
-              ; mov tempX, dword ptr [edi + edx] ; x
-              ; mov tempY, dword ptr [esi + edx] ; y
-              invoke CreateCompatibleDC, hDC
-              mov   memDC, eax
-              invoke SelectObject, memDC, hBmpBlock
-              mov  hOld, eax  
-              invoke TransparentBlt, hDC, dword ptr [edi + edx], dword ptr [esi + edx], 12,14, memDC, \
-                            0, 0, 7, 12, CREF_TRANSPARENT
-              invoke SelectObject,hDC,hOld
-              invoke DeleteDC,memDC 
-              invoke wsprintf,addr buffer,chr$("tempX: %d"), tempX            
-              invoke MessageBox,hWin,ADDR buffer,ADDR szDisplayName,MB_OK
-              inc edx
-            .ENDW
-
-            xor eax, eax
-            xor ecx, ecx
-            xor ebx, ebx
-
-            ; Apple image
+          
+            ; Apple image 1
 
             invoke CreateCompatibleDC, hDC
             mov   memDC, eax
@@ -624,7 +664,34 @@ WndProc proc hWin   :DWORD,
 
             invoke SelectObject,hDC,hOld
             invoke DeleteDC,memDC  
-        
+
+            ; Apple image 2
+
+            invoke CreateCompatibleDC, hDC
+            mov   memDC, eax
+
+            invoke SelectObject, memDC, hBmpApple
+            mov  hOld, eax  
+
+            invoke TransparentBlt, hDC, appleX2, appleY2, 24, 30, memDC, \
+                            0, 0, 28, 33, CREF_TRANSPARENT
+
+            invoke SelectObject,hDC,hOld
+            invoke DeleteDC,memDC  
+
+            ; Apple image 3
+
+            invoke CreateCompatibleDC, hDC
+            mov   memDC, eax
+
+            invoke SelectObject, memDC, hBmpApple
+            mov  hOld, eax  
+
+            invoke TransparentBlt, hDC, appleX3, appleY3, 24, 30, memDC, \
+                            0, 0, 28, 33, CREF_TRANSPARENT
+
+            invoke SelectObject,hDC,hOld
+            invoke DeleteDC,memDC 
 
             invoke EndPaint,hWin,ADDR Ps
             return  0
@@ -706,19 +773,43 @@ ThreadProc PROC USES ecx Param:DWORD
     mov ebx, counterY ; temp
 
     .if direction == "r"
-      add counterX, 10
+      .if pont > 5 && pont < 20
+        add counterX, 20
+      .ELSEIF pont > 20
+        add counterX, 30
+      .ELSE
+        add counterX, 10
+      .endif
     .endif
 
     .if direction == "l"
-      sub counterX, 10
+      .if pont > 5 && pont < 20
+        sub counterX, 20
+      .ELSEIF pont > 20
+        sub counterX, 30
+      .ELSE
+        sub counterX, 10
+      .endif
     .endif
 
     .if direction == "u"
-      sub counterY, 10
+      .if pont > 5 && pont < 20
+        sub counterY, 20
+      .ELSEIF pont > 20
+        sub counterY, 30
+      .ELSE
+        sub counterY, 10
+      .endif
     .endif
 
     .if direction == "d"
-      add counterY, 10
+      .if pont > 5 && pont < 20
+        add counterY, 20
+      .ELSEIF pont > 20
+        add counterY, 30
+      .ELSE
+        add counterY, 10
+      .endif
     .endif
 
     mov eax, appleX
@@ -734,44 +825,17 @@ ThreadProc PROC USES ecx Param:DWORD
       add ecx, 20
 
       .if counterY >= eax && counterY <= ecx
-        mov edi, offset bodyX
-        mov esi, offset bodyY
-        mov eax, pont
-
-        mov dword ptr[edi + eax], edx ; x temporario
-        mov dword ptr [esi + eax], ebx ; y temporario
         inc pont
+        
+        mov   open_lpstrDeviceType, 0h         ;fill MCI_OPEN_PARMS structure
+        mov   open_lpstrElementName,OFFSET AppleSong
+        invoke mciSendCommandA,0,MCI_OPEN, MCI_OPEN_ELEMENT,offset open_dwCallback 
+            
+        ;------------------------------------------------------------------------------
+        ; API "mciSendCommandA", MCI_PLAY command begins transmitting output data.
+        ;------------------------------------------------------------------------------
+        invoke mciSendCommandA,open_wDeviceID,MCI_PLAY,MCI_FROM or MCI_NOTIFY,offset play_dwCallback
 
-        ;.if pont == 0
-         ; .if direction == "r"
-          ;  mov ecx, counterX
-           ; sub ecx, 20
-            ;mov edx, counterY
-            ;mov dword ptr [ebp + edi], ecx
-            ;mov dword ptr [esi + edi], edx
-          ;.endif
-          ;.if direction == "l"
-           ; mov ecx, counterX
-            ;add ecx, 20
-            ;mov edx, counterY
-            ;mov dword ptr [ebp + edi], ecx
-            ;mov dword ptr [esi + edi], edx
-          ;.endif
-          ;.if direction == "u"
-           ; mov ecx, counterY
-           ; add ecx, 20
-           ; mov edx, counterX
-           ; mov dword ptr [ebp + edi], edx
-           ; mov dword ptr [esi + edi], ecx
-          ;.endif
-          ;.if direction == "d"
-           ; mov ecx, counterY
-           ; sub ecx, 20
-           ; mov edx, counterX
-           ; mov dword ptr [ebp + edi], edx
-          ; mov dword ptr [esi + edi], ecx
-          ;.endif
-        ;.endif
         invoke CDGenerateRandomBits, Addr random_bytes, (NumberOfNumbers)
         lea esi, random_bytes
         lodsd 
@@ -793,6 +857,104 @@ ThreadProc PROC USES ecx Param:DWORD
           add edx, 40
         .endif
         mov appleY, edx 
+      .endif
+  
+    .endif
+
+    mov eax, appleX2
+    sub eax, 25
+    mov ecx, appleX2
+    add ecx, 25 
+
+    ; EBP -> nao usar
+    .if counterX >= eax && counterX <= ecx    ; Colisao Cobra X Maca
+      mov eax, appleY2
+      sub eax, 20
+      mov ecx, appleY2
+      add ecx, 20
+
+      .if counterY >= eax && counterY <= ecx
+        inc pont
+
+        mov   open_lpstrDeviceType, 0h         ;fill MCI_OPEN_PARMS structure
+        mov   open_lpstrElementName,OFFSET AppleSong
+        invoke mciSendCommandA,0,MCI_OPEN, MCI_OPEN_ELEMENT,offset open_dwCallback 
+            
+        ;------------------------------------------------------------------------------
+        ; API "mciSendCommandA", MCI_PLAY command begins transmitting output data.
+        ;------------------------------------------------------------------------------
+        invoke mciSendCommandA,open_wDeviceID,MCI_PLAY,MCI_FROM or MCI_NOTIFY,offset play_dwCallback
+        
+        invoke CDGenerateRandomBits, Addr random_bytes, (NumberOfNumbers)
+        lea esi, random_bytes
+        lodsd 
+        mov ecx, RangeOfNumbers             ; Range (0..RangeOfNumbers-1)
+        xor edx, edx                        ; Needed for DIV
+        div ecx                             ; EDX:EAX/ECX -> EAX remainder EDX
+        .if edx < 40
+          add edx, 40
+        .endif
+        mov appleX2, edx 
+        xor edx, edx
+        invoke CDGenerateRandomBits, Addr random_bytes, (NumberOfNumbers)
+        lea esi, random_bytes
+        lodsd 
+        mov ecx, RangeOfNumbers             ; Range (0..RangeOfNumbers-1)
+        xor edx, edx                        ; Needed for DIV
+        div ecx                             ; EDX:EAX/ECX -> EAX remainder EDX
+        .if edx < 40
+          add edx, 40
+        .endif
+        mov appleY2, edx 
+      .endif
+  
+    .endif
+
+    mov eax, appleX3
+    sub eax, 25
+    mov ecx, appleX3
+    add ecx, 25 
+
+    ; EBP -> nao usar
+    .if counterX >= eax && counterX <= ecx    ; Colisao Cobra X Maca
+      mov eax, appleY3
+      sub eax, 20
+      mov ecx, appleY3
+      add ecx, 20
+
+      .if counterY >= eax && counterY <= ecx
+        inc pont
+
+        mov   open_lpstrDeviceType, 0h         ;fill MCI_OPEN_PARMS structure
+        mov   open_lpstrElementName,OFFSET AppleSong
+        invoke mciSendCommandA,0,MCI_OPEN, MCI_OPEN_ELEMENT,offset open_dwCallback 
+            
+        ;------------------------------------------------------------------------------
+        ; API "mciSendCommandA", MCI_PLAY command begins transmitting output data.
+        ;------------------------------------------------------------------------------
+        invoke mciSendCommandA,open_wDeviceID,MCI_PLAY,MCI_FROM or MCI_NOTIFY,offset play_dwCallback
+        
+        invoke CDGenerateRandomBits, Addr random_bytes, (NumberOfNumbers)
+        lea esi, random_bytes
+        lodsd 
+        mov ecx, RangeOfNumbers             ; Range (0..RangeOfNumbers-1)
+        xor edx, edx                        ; Needed for DIV
+        div ecx                             ; EDX:EAX/ECX -> EAX remainder EDX
+        .if edx < 40
+          add edx, 40
+        .endif
+        mov appleX3, edx 
+        xor edx, edx
+        invoke CDGenerateRandomBits, Addr random_bytes, (NumberOfNumbers)
+        lea esi, random_bytes
+        lodsd 
+        mov ecx, RangeOfNumbers             ; Range (0..RangeOfNumbers-1)
+        xor edx, edx                        ; Needed for DIV
+        div ecx                             ; EDX:EAX/ECX -> EAX remainder EDX
+        .if edx < 40
+          add edx, 40
+        .endif
+        mov appleY3, edx 
       .endif
   
     .endif
