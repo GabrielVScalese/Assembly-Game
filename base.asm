@@ -423,6 +423,18 @@ WndProc proc hWin   :DWORD,
             invoke MessageBox,hWin,ADDR TheMsg,ADDR szDisplayName,MB_OK
         .endif
 
+    ; Avisa se a musica acabou
+    .elseif uMsg == MM_MCINOTIFY
+
+     mov   open_lpstrDeviceType, 0h         ;fill MCI_OPEN_PARMS structure
+      mov   open_lpstrElementName,OFFSET BackgroundMusic
+      invoke mciSendCommandA,0,MCI_OPEN, MCI_OPEN_ELEMENT,offset open_dwCallback 
+              
+      ;------------------------------------------------------------------------------
+      ; API "mciSendCommandA", MCI_PLAY command begins transmitting output data.
+      ;------------------------------------------------------------------------------
+      invoke mciSendCommandA,open_wDeviceID,MCI_PLAY,MCI_FROM or MCI_NOTIFY,offset play_dwCallback
+
     ;====== end menu commands ======
     .elseif uMsg == WM_LBUTTONDOWN
             mov eax,lParam
