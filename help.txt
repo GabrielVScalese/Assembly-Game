@@ -1,4 +1,4 @@
 HELP
 
-Em nosso jogo, optamos por modificar o conceito do jogo Snake, excluindo o objeto cauda do cobra e incrementando
+Em nosso jogo, optamos por modificar o conceito do jogo Snake, excluindo o objeto cauda da cobra e incrementando
 a velocidade do jogo de acordo com a pontuação obtida pelo jogador.
