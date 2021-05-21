@@ -1,6 +1,6 @@
 @echo off
 
-    set projectName=base
+    set projectName=main
     if exist "%projectName%.obj" del "%projectName%.obj"
     if exist "%projectName%.exe" del "%projectName%.exe"
 
